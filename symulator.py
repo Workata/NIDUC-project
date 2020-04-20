@@ -17,9 +17,30 @@ def generateMessage(messageLength, packetLength):           #wygenerwoanie wiado
     return data
 
 
-def binarySymmetricChannel(packet, probability):
+def binarySymmetricChannel(packet, probability):        # bledy pojedyncze -> Model BSC
     bsc = komm.BinarySymmetricChannel(probability)
     return bsc(packet)
+
+def burstErrorChannel(packet, probability, lenOfSubsequence):     #bledy grupowe -> Model Gilberta
+    packetLen = len(packet)
+    i = 0
+    while i < packetLen:
+        toss = np.random.randint(101)   # losowy int <0,100>
+        print(toss)
+        print(probability*100)
+        print("\n")
+        if(toss >= probability*100):
+            i += 1
+            continue
+        else:
+            j = 0
+            while j < lenOfSubsequence:
+                if(packet[i+j] == 1): packet[i+j] = 0   # negacja bitow w podciagu
+                else: packet[i+j] = 1
+                j += 1
+                if ((j + i) == packetLen): return packet  # wykroczylismy poza pakiet
+            i += j  # roznica + przejscie do kolejnego bitu
+    return packet
 
 def addParityBit(packet):   #wzgledem "1"
     counter = 0
@@ -68,7 +89,7 @@ def generateBCHCode(mi, tau):   # n = 2^(mi) - 1, 1<= tau <2^(mi-1), ; dlugosc p
 
 # ---------------------------------------------------SYMULACJE-------------------------------------
 
-def compareData(data1, data2):               #zakladam, ze wymiary sa takie same
+def compareData(data1, data2):               # zakladam, ze wymiary sa takie same
     numberOfPackets = data1.shape[0] # liczba pakietow
     packetLength = data1.shape[1] # dlugosc pakietu
     bitErrorCounter = 0
@@ -82,11 +103,6 @@ def compareData(data1, data2):               #zakladam, ze wymiary sa takie same
             j += 1
         i += 1
     return bitErrorCounter
-
-
-
-
-
 
 def simulationBSCandParityBit(messageLength, packetLength, retransmissionMax):
     data = generateMessage(messageLength, packetLength)
@@ -113,6 +129,7 @@ packet = [0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1]
 packet2 = [0, 1, 0]
 packet3 = [0, 1, 0, 1]
 packet4 = [0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1]
+#         [0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0]
 #y = addParityBit(np.array(packet))
 #x = binarySymmetricChannel(packet, 0.1)
 #print(y)
@@ -130,8 +147,11 @@ decoded = coder.decode(coded)
 #data = generateMessage(20, 4)
 #print(data)
 
-experiment = simulationBSCandParityBit(20,4,2)
-print(experiment[0])
-print("\n")
-print(experiment[1])
-print(compareData(experiment[0], experiment[1]))
+#experiment = simulationBSCandParityBit(20, 4, 2)
+#print(experiment[0])
+#print("\n")
+#print(experiment[1])
+#print(compareData(experiment[0], experiment[1]))
+
+packetPrim = burstErrorChannel(packet4, 0.2, 3)
+print(packetPrim)
