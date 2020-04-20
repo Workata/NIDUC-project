@@ -66,7 +66,27 @@ def generateBCHCode(mi, tau):   # n = 2^(mi) - 1, 1<= tau <2^(mi-1), ; dlugosc p
     coder = komm.BCHCode(mi, tau)
     return coder
 
-#---------------------------------------------------SYMULACJE-------------------------------------
+# ---------------------------------------------------SYMULACJE-------------------------------------
+
+def compareData(data1, data2):               #zakladam, ze wymiary sa takie same
+    numberOfPackets = data1.shape[0] # liczba pakietow
+    packetLength = data1.shape[1] # dlugosc pakietu
+    bitErrorCounter = 0
+    i = 0
+    j = 0
+    while i < numberOfPackets:
+        j = 0
+        while j < packetLength:
+            if(data1[i][j] != data2[i][j]):
+                bitErrorCounter += 1
+            j += 1
+        i += 1
+    return bitErrorCounter
+
+
+
+
+
 
 def simulationBSCandParityBit(messageLength, packetLength, retransmissionMax):
     data = generateMessage(messageLength, packetLength)
@@ -82,7 +102,7 @@ def simulationBSCandParityBit(messageLength, packetLength, retransmissionMax):
                 retransmissionCounter+=1
             else:
                 break
-        packetReceived = np.delete(packetReceived,len(packetReceived)-1)    # obciac bit parzystosci
+        packetReceived = np.delete(packetReceived, len(packetReceived)-1)    # obciac bit parzystosci
         dataReceived[i] = packetReceived
         i += 1
     return [data, dataReceived]
@@ -114,3 +134,4 @@ experiment = simulationBSCandParityBit(20,4,2)
 print(experiment[0])
 print("\n")
 print(experiment[1])
+print(compareData(experiment[0], experiment[1]))
