@@ -4,25 +4,25 @@ import time
 
 #-----------------------------METODY--DO--SYMULACJI-----------------------------------------------------------------
 
-def generateMessage(messageLength, packetLength):           #wygenerwoanie wiadomosci i podzielenie jej na pakiety
-    numberOfPackets = int(np.ceil(messageLength/packetLength))     #liczba pakietow zaokraglona w gore do liczby calkowitej
+def generateMessage(messageLength, packetLength):                   #wygenerwoanie wiadomosci i podzielenie jej na pakiety
+    numberOfPackets = int(np.ceil(messageLength/packetLength))      #liczba pakietow zaokraglona w gore do liczby calkowitej
     data = np.arange(packetLength*numberOfPackets).reshape(numberOfPackets, packetLength)
     i = 0
     j = 0
     while i < numberOfPackets:
         while j < packetLength:
-            data[i][j] = np.random.randint(2)       #losowy int <0,2) czyli 0 lub 1
+            data[i][j] = np.random.randint(2)                        #losowy int <0,2) czyli 0 lub 1
             j += 1
         i += 1
         j = 0
     return data
 
 
-def binarySymmetricChannel(packet, probability):        # bledy pojedyncze -> Model BSC
+def binarySymmetricChannel(packet, probability):                  # bledy pojedyncze -> Model BSC
     bsc = komm.BinarySymmetricChannel(probability)
     return bsc(packet)
 
-def burstErrorChannel(packet, probability, lenOfSubsequence):     #bledy grupowe -> Model Gilberta
+def burstErrorChannel(packet, probability, lenOfSubsequence):     # bledy grupowe -> Model Gilberta
     packetLen = len(packet)
     i = 0
     while i < packetLen:
@@ -33,14 +33,14 @@ def burstErrorChannel(packet, probability, lenOfSubsequence):     #bledy grupowe
         else:
             j = 0
             while j < lenOfSubsequence:
-                if(packet[i+j] == 1): packet[i+j] = 0   # negacja bitow w podciagu
+                if(packet[i+j] == 1): packet[i+j] = 0       # negacja bitow w podciagu
                 else: packet[i+j] = 1
                 j += 1
-                if ((j + i) == packetLen): return packet  # wykroczylismy poza pakiet
-            i += j  # roznica + przejscie do kolejnego bitu
+                if ((j + i) == packetLen): return packet    # wykroczylismy poza pakiet
+            i += j                                          # dodanie roznicy + przejscie do kolejnego bitu
     return packet
 
-def addParityBit(packet):   #wzgledem "1"
+def addParityBit(packet):   #dodajemy bit parzystosci wzgledem "1"
     counter = 0
     for x in packet:
         if x==1:
@@ -61,9 +61,9 @@ def checkParityBit(packet):
         if x == 1:
             counter += 1
     if counter % 2 == parityBit:
-        return 1  #true
+        return 1     #true
     else:
-        return 0 #false
+        return 0    #false
 
 
 # W dokumentacji length to jest dlugosc calej wiadomosci po zakodowaniu a dimension do dlugosc wiadomosci przed zakodowaniem (tresci)
@@ -84,10 +84,10 @@ def generateBCHCode(mi, tau):   # n = 2^(mi) - 1, 1<= tau <2^(mi-1), ; dlugosc p
     return coder
 
 # ---------------------------------------------------SYMULACJE-------------------------------------
-
+# metoda porownujaca dane przed wyslaniem z danymi po wyslaniu
 def compareData(data1, data2):               # zakladam, ze wymiary sa takie same
-    numberOfPackets = data1.shape[0] # liczba pakietow
-    packetLength = data1.shape[1] # dlugosc pakietu
+    numberOfPackets = data1.shape[0]         # liczba pakietow
+    packetLength = data1.shape[1]            # dlugosc pakietu
     bitErrorCounter = 0
     i = 0
     j = 0
@@ -115,7 +115,7 @@ def simulationBSCandParityBit(messageLength, packetLength, retransmissionMax):
                 retransmissionCounter+=1
             else:
                 break
-        packetReceived = np.delete(packetReceived, len(packetReceived)-1)    # obciac bit parzystosci
+        packetReceived = np.delete(packetReceived, len(packetReceived)-1)    # obciecie bitu parzystosci
         dataReceived[i] = packetReceived
         i += 1
     end = time.time()
@@ -127,7 +127,7 @@ def simulationBSCandParityBit(messageLength, packetLength, retransmissionMax):
 def simulationBurstErrorandParityBit(messageLength, packetLength, lenOfSubsequence, retransmissionMax):
     data = generateMessage(messageLength, packetLength)
     numberOfPackets = int(np.ceil(messageLength / packetLength))
-    dataReceived = np.arange(packetLength*numberOfPackets).reshape(numberOfPackets, packetLength)    #
+    dataReceived = np.arange(packetLength*numberOfPackets).reshape(numberOfPackets, packetLength)
     i = 0
     start = time.time()
     for packet in data:
@@ -139,7 +139,7 @@ def simulationBurstErrorandParityBit(messageLength, packetLength, lenOfSubsequen
                 retransmissionCounter+=1
             else:
                 break
-        packetReceived = np.delete(packetReceived, len(packetReceived)-1)    # obciac bit parzystosci
+        packetReceived = np.delete(packetReceived, len(packetReceived)-1)    # obciecie bitu parzystosci
         dataReceived[i] = packetReceived
         i += 1
     end = time.time()
@@ -148,7 +148,7 @@ def simulationBurstErrorandParityBit(messageLength, packetLength, lenOfSubsequen
     timeCounter = (end-start)                                           # czas symulacji (w sekundach)
     return [bitErrorRate, redundancy, timeCounter]
 
-def simulationBSCandCRCGolay(messageLength, retransmissionMax):     # packetLength = 12
+def simulationBSCandCRCGolay(messageLength, retransmissionMax):     # packetLength = 12, stala dlugosc pakietu
     packetLength = 12
     coder = generateCRCGolay()
     data = generateMessage(messageLength, packetLength)
@@ -256,7 +256,7 @@ def simulationBurstErrorandBCH(messageLength, lenOfSubsequence, retransmissionMa
         i += 1
     end = time.time()
     bitErrorRate = (compareData(data, dataReceived)/messageLength)*100   # bit error rate (wyrazony w procentach)
-    redundancy = (1-(packetLength/(2**mi -1)))*100                # nadmiar kodowy (wyrazony w procentach) BCH(5,3) -> 31 = 16 (pakiet) + 15 (nadmiar)
+    redundancy = (1-(packetLength/(2**mi -1)))*100                      # nadmiar kodowy (wyrazony w procentach) BCH(5,3) -> 31 = 16 (pakiet) + 15 (nadmiar)
     timeCounter = (end-start)                                           # czas symulacji (w sekundach)
     return [bitErrorRate, redundancy, timeCounter]
 
@@ -269,9 +269,7 @@ def simulationBurstErrorandBCH(messageLength, lenOfSubsequence, retransmissionMa
 #experiment = simulationBurstErrorandCRCGolay(1200, 3, 2)
 experiment = simulationBSCandBCH(1600, 2)
 #experiment = simulationBurstErrorandBCH(1600, 3, 2)
-print(experiment[0])
-print("\n")
-print(experiment[1])
-print("\n")
-print(experiment[2])
+print("Bit error rate: ", experiment[0], "%")
+print("Redundancy: ",experiment[1], "%")
+print("Time of simulation: ",experiment[2],"s")
 
