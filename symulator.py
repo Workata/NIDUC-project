@@ -1,5 +1,6 @@
 import numpy as np
 import komm as komm
+import time
 
 #-----------------------------METODY--DO--SYMULACJI-----------------------------------------------------------------
 
@@ -8,7 +9,7 @@ def generateMessage(messageLength, packetLength):           #wygenerwoanie wiado
     data = np.arange(packetLength*numberOfPackets).reshape(numberOfPackets, packetLength)
     i = 0
     j = 0
-    while  i < numberOfPackets:
+    while i < numberOfPackets:
         while j < packetLength:
             data[i][j] = np.random.randint(2)       #losowy int <0,2) czyli 0 lub 1
             j += 1
@@ -25,10 +26,7 @@ def burstErrorChannel(packet, probability, lenOfSubsequence):     #bledy grupowe
     packetLen = len(packet)
     i = 0
     while i < packetLen:
-        toss = np.random.randint(101)   # losowy int <0,100>
-        print(toss)
-        print(probability*100)
-        print("\n")
+        toss = np.random.randint(100)   # losowy int <0,99>
         if(toss >= probability*100):
             i += 1
             continue
@@ -87,6 +85,10 @@ def generateBCHCode(mi, tau):   # n = 2^(mi) - 1, 1<= tau <2^(mi-1), ; dlugosc p
     coder = komm.BCHCode(mi, tau)
     return coder
 
+#def generateCRC8():
+ #   coder = komm.CyclicCode(length=11, generator_polynomial=0b111010101)
+  #  return coder
+
 # ---------------------------------------------------SYMULACJE-------------------------------------
 
 def compareData(data1, data2):               # zakladam, ze wymiary sa takie same
@@ -109,6 +111,7 @@ def simulationBSCandParityBit(messageLength, packetLength, retransmissionMax):
     numberOfPackets = int(np.ceil(messageLength / packetLength))
     dataReceived = np.arange(packetLength*numberOfPackets).reshape(numberOfPackets, packetLength)    #
     i = 0
+    start = time.time()
     for packet in data:
         retransmissionCounter = 0
         while retransmissionCounter < retransmissionMax:
@@ -121,7 +124,11 @@ def simulationBSCandParityBit(messageLength, packetLength, retransmissionMax):
         packetReceived = np.delete(packetReceived, len(packetReceived)-1)    # obciac bit parzystosci
         dataReceived[i] = packetReceived
         i += 1
-    return [data, dataReceived]
+    end = time.time()
+    bitErrorRate = (compareData(data,dataReceived)/messageLength)*100   # bit error rate (wyrazony w procentach)
+    redundancy = (1-(packetLength/(packetLength+1)))*100                # nadmiar kodowy (wyrazony w procentach)
+    timeCounter = (end-start)                                           # czas symulacji (w sekundach)
+    return [bitErrorRate, redundancy, timeCounter]
 
 
 #--------------------------------------------TESTY----------------------------------------------------------------
@@ -129,7 +136,7 @@ packet = [0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1]
 packet2 = [0, 1, 0]
 packet3 = [0, 1, 0, 1]
 packet4 = [0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1]
-#         [0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0]
+
 #y = addParityBit(np.array(packet))
 #x = binarySymmetricChannel(packet, 0.1)
 #print(y)
@@ -137,9 +144,9 @@ packet4 = [0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1]
 #coder = generateCRCGolay()
 #coder = generateCRCSimplex()
 #coder = generateCRCHamming()
-coder = generateBCHCode(5, 3)
-coded = coder.encode(packet4)
-decoded = coder.decode(coded)
+#coder = generateBCHCode(5, 3)
+#coded = coder.encode(packet4)
+#decoded = coder.decode(coded)
 #print(coded)
 #print(decoded)
 #y = addParityBit(packet)
@@ -147,11 +154,17 @@ decoded = coder.decode(coded)
 #data = generateMessage(20, 4)
 #print(data)
 
-#experiment = simulationBSCandParityBit(20, 4, 2)
-#print(experiment[0])
-#print("\n")
-#print(experiment[1])
+experiment = simulationBSCandParityBit(100, 1, 2)
+print(experiment[0])
+print("\n")
+print(experiment[1])
+print("\n")
+print(experiment[2])
 #print(compareData(experiment[0], experiment[1]))
 
-packetPrim = burstErrorChannel(packet4, 0.2, 3)
-print(packetPrim)
+#packetPrim = burstErrorChannel(packet4, 0.2, 3)
+#print(packetPrim)
+
+#coder = generateCRC8()
+#coded = coder.encode(packet3)
+
