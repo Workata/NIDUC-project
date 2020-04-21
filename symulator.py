@@ -46,9 +46,9 @@ def addParityBit(packet):   #wzgledem "1"
         if x==1:
             counter+=1
     if counter%2 == 0:
-        packet = np.append(packet, [0])   #packet.append(0)    #
+        packet = np.append(packet, [0])
     else:
-        packet = np.append(packet, [1])  #packet.append(1)        #
+        packet = np.append(packet, [1])
     return packet
 
 def checkParityBit(packet):
@@ -56,38 +56,32 @@ def checkParityBit(packet):
     print(parityBit)
     array = np.array(packet)
     counter = 0
-    #print(array[0:(len(array)-1)])      #array[k:n] to indeksy: <k,n) "The result includes the start index, but excludes the end index."
+    #array[k:n] to indeksy: <k,n) "The result includes the start index, but excludes the end index."
     for x in array[0:(len(array)-1)]:   # slicing array
         if x == 1:
             counter += 1
     if counter % 2 == parityBit:
-        #print("bez zmian")
-        return 1  # true
+        return 1  #true
     else:
-        #print("zmiana")
-        return 0  # false
+        return 0 #false
 
 
 # W dokumentacji length to jest dlugosc calej wiadomosci po zakodowaniu a dimension do dlugosc wiadomosci przed zakodowaniem (tresci)
 def generateCRCGolay():     #dlugosc pakietu -> 12
-    code = komm.CyclicCode(length=23, generator_polynomial=0b101011100011)  #code = komm.CyclicCode(length=14, generator_polynomial=0b111010101)
+    code = komm.CyclicCode(length=23, generator_polynomial=0b101011100011)
     return code
 
 def generateCRCSimplex():   #dlugosc pakietu -> 3
     coder = komm.CyclicCode(length=7, generator_polynomial=0b10111)
     return coder
 
-def generateCRCHamming():   #dlugosc pakietu -> 4, Hamming podobnie jak BCH jest FEC; Jak inne? Co z CRC16?
+def generateCRCHamming():   #dlugosc pakietu -> 4, Hamming podobnie jak BCH jest FEC
     coder = komm.CyclicCode(length=7, generator_polynomial=0b1011)
     return coder
 
 def generateBCHCode(mi, tau):   # n = 2^(mi) - 1, 1<= tau <2^(mi-1), ; dlugosc pakietu (dimension) -> k>= n - mi*tau
     coder = komm.BCHCode(mi, tau)
     return coder
-
-#def generateCRC8():
- #   coder = komm.CyclicCode(length=11, generator_polynomial=0b111010101)
-  #  return coder
 
 # ---------------------------------------------------SYMULACJE-------------------------------------
 
@@ -130,41 +124,154 @@ def simulationBSCandParityBit(messageLength, packetLength, retransmissionMax):
     timeCounter = (end-start)                                           # czas symulacji (w sekundach)
     return [bitErrorRate, redundancy, timeCounter]
 
+def simulationBurstErrorandParityBit(messageLength, packetLength, lenOfSubsequence, retransmissionMax):
+    data = generateMessage(messageLength, packetLength)
+    numberOfPackets = int(np.ceil(messageLength / packetLength))
+    dataReceived = np.arange(packetLength*numberOfPackets).reshape(numberOfPackets, packetLength)    #
+    i = 0
+    start = time.time()
+    for packet in data:
+        retransmissionCounter = 0
+        while retransmissionCounter < retransmissionMax:
+            packetPB = addParityBit(packet)
+            packetReceived = burstErrorChannel(packetPB, 0.1, lenOfSubsequence)
+            if(checkParityBit(packetReceived)==0):
+                retransmissionCounter+=1
+            else:
+                break
+        packetReceived = np.delete(packetReceived, len(packetReceived)-1)    # obciac bit parzystosci
+        dataReceived[i] = packetReceived
+        i += 1
+    end = time.time()
+    bitErrorRate = (compareData(data,dataReceived)/messageLength)*100   # bit error rate (wyrazony w procentach)
+    redundancy = (1-(packetLength/(packetLength+1)))*100                # nadmiar kodowy (wyrazony w procentach)
+    timeCounter = (end-start)                                           # czas symulacji (w sekundach)
+    return [bitErrorRate, redundancy, timeCounter]
+
+def simulationBSCandCRCGolay(messageLength, retransmissionMax):     # packetLength = 12
+    packetLength = 12
+    coder = generateCRCGolay()
+    data = generateMessage(messageLength, packetLength)
+    numberOfPackets = int(np.ceil(messageLength / packetLength))
+    dataReceived = np.arange(packetLength*numberOfPackets).reshape(numberOfPackets, packetLength)    #
+    i = 0
+    start = time.time()
+    for packet in data:
+        retransmissionCounter = 0
+        while retransmissionCounter < retransmissionMax:
+            packetCRCGolayEncoded = coder.encode(packet)
+            packetReceived = binarySymmetricChannel(packetCRCGolayEncoded, 0.1)
+            packetCRCGolayDecoded = coder.decode(packetReceived)
+            comparision = packet == packetCRCGolayDecoded
+            if(comparision.all() == False):  # w bibliotece komm nie znalazlem metody, ktora pozwala sprawdzac poprawnosc odebranego pakietu, wiec go porownuje z poczatkowym
+                retransmissionCounter+=1
+            else:
+                break
+        dataReceived[i] = packetCRCGolayDecoded
+        i += 1
+    end = time.time()
+    bitErrorRate = (compareData(data,dataReceived)/messageLength)*100   # bit error rate (wyrazony w procentach)
+    redundancy = (1-(packetLength/(packetLength+11)))*100                # nadmiar kodowy (wyrazony w procentach) Golay -> 23 = 12 (pakiet) + 11 (nadmiar)
+    timeCounter = (end-start)                                           # czas symulacji (w sekundach)
+    return [bitErrorRate, redundancy, timeCounter]
+
+def simulationBurstErrorandCRCGolay(messageLength, lenOfSubsequence, retransmissionMax):     # packetLength = 12
+    packetLength = 12
+    coder = generateCRCGolay()
+    data = generateMessage(messageLength, packetLength)
+    numberOfPackets = int(np.ceil(messageLength / packetLength))
+    dataReceived = np.arange(packetLength*numberOfPackets).reshape(numberOfPackets, packetLength)    #
+    i = 0
+    start = time.time()
+    for packet in data:
+        retransmissionCounter = 0
+        while retransmissionCounter < retransmissionMax:
+            packetCRCGolayEncoded = coder.encode(packet)
+            packetReceived = burstErrorChannel(packetCRCGolayEncoded, 0.1, lenOfSubsequence)
+            packetCRCGolayDecoded = coder.decode(packetReceived)
+            comparision = packet == packetCRCGolayDecoded
+            if(comparision.all() == False):  # w bibliotece komm nie znalazlem metody, ktora pozwala sprawdzac poprawnosc odebranego pakietu (CRC), wiec go porownuje z poczatkowym
+                retransmissionCounter+=1
+            else:
+                break
+        dataReceived[i] = packetCRCGolayDecoded
+        i += 1
+    end = time.time()
+    bitErrorRate = (compareData(data,dataReceived)/messageLength)*100   # bit error rate (wyrazony w procentach)
+    redundancy = (1-(packetLength/(packetLength+11)))*100                # nadmiar kodowy (wyrazony w procentach) Golay -> 23 = 12 (pakiet) + 11 (nadmiar)
+    timeCounter = (end-start)                                           # czas symulacji (w sekundach)
+    return [bitErrorRate, redundancy, timeCounter]
+
+def simulationBSCandBCH(messageLength, retransmissionMax):   # n = 2^(mi) - 1, 1<= tau <2^(mi-1), ; dlugosc pakietu (dimension) -> k>= n - mi*tau
+    packetLength = 16   # >= n- mi*tau
+    mi = 5
+    tau = 3
+    coder = generateBCHCode(mi, tau)   # (mi, tau)
+    data = generateMessage(messageLength, packetLength)
+    numberOfPackets = int(np.ceil(messageLength / packetLength))
+    dataReceived = np.arange(packetLength*numberOfPackets).reshape(numberOfPackets, packetLength)
+    i = 0
+    start = time.time()
+    for packet in data:
+        retransmissionCounter = 0
+        while retransmissionCounter < retransmissionMax:
+            packetBCHEncoded = coder.encode(packet)
+            packetReceived = binarySymmetricChannel(packetBCHEncoded, 0.1)
+            packetBCHDecoded = coder.decode(packetReceived)
+            comparision = packet == packetBCHDecoded
+            if(comparision.all() == False):  # w bibliotece komm nie znalazlem metody, ktora pozwala sprawdzac poprawnosc odebranego pakietu, wiec go porownuje z poczatkowym
+                retransmissionCounter+=1
+            else:
+                break
+        dataReceived[i] = packetBCHDecoded
+        i += 1
+    end = time.time()
+    bitErrorRate = (compareData(data, dataReceived)/messageLength)*100   # bit error rate (wyrazony w procentach)
+    redundancy = (1-(packetLength/(2**mi -1)))*100                # nadmiar kodowy (wyrazony w procentach) BCH(5,3) -> 31 = 16 (pakiet) + 15 (nadmiar)
+    timeCounter = (end-start)                                           # czas symulacji (w sekundach)
+    return [bitErrorRate, redundancy, timeCounter]
+
+def simulationBurstErrorandBCH(messageLength, lenOfSubsequence, retransmissionMax):   # n = 2^(mi) - 1, 1<= tau <2^(mi-1), ; dlugosc pakietu (dimension) -> k>= n - mi*tau
+    packetLength = 16   # >= n- mi*tau
+    mi = 5
+    tau = 3
+    coder = generateBCHCode(mi, tau)   # (mi, tau)
+    data = generateMessage(messageLength, packetLength)
+    numberOfPackets = int(np.ceil(messageLength / packetLength))
+    dataReceived = np.arange(packetLength*numberOfPackets).reshape(numberOfPackets, packetLength)
+    i = 0
+    start = time.time()
+    for packet in data:
+        retransmissionCounter = 0
+        while retransmissionCounter < retransmissionMax:
+            packetBCHEncoded = coder.encode(packet)
+            packetReceived = burstErrorChannel(packetBCHEncoded, 0.1, lenOfSubsequence)
+            packetBCHDecoded = coder.decode(packetReceived)
+            comparision = packet == packetBCHDecoded
+            if(comparision.all() == False):  # w bibliotece komm nie znalazlem metody, ktora pozwala sprawdzac poprawnosc odebranego pakietu, wiec go porownuje z poczatkowym
+                retransmissionCounter+=1
+            else:
+                break
+        dataReceived[i] = packetBCHDecoded
+        i += 1
+    end = time.time()
+    bitErrorRate = (compareData(data, dataReceived)/messageLength)*100   # bit error rate (wyrazony w procentach)
+    redundancy = (1-(packetLength/(2**mi -1)))*100                # nadmiar kodowy (wyrazony w procentach) BCH(5,3) -> 31 = 16 (pakiet) + 15 (nadmiar)
+    timeCounter = (end-start)                                           # czas symulacji (w sekundach)
+    return [bitErrorRate, redundancy, timeCounter]
+
 
 #--------------------------------------------TESTY----------------------------------------------------------------
-packet = [0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1]
-packet2 = [0, 1, 0]
-packet3 = [0, 1, 0, 1]
-packet4 = [0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1]
 
-#y = addParityBit(np.array(packet))
-#x = binarySymmetricChannel(packet, 0.1)
-#print(y)
-#print(x)
-#coder = generateCRCGolay()
-#coder = generateCRCSimplex()
-#coder = generateCRCHamming()
-#coder = generateBCHCode(5, 3)
-#coded = coder.encode(packet4)
-#decoded = coder.decode(coded)
-#print(coded)
-#print(decoded)
-#y = addParityBit(packet)
-#checkParityBit(y)
-#data = generateMessage(20, 4)
-#print(data)
-
-experiment = simulationBSCandParityBit(100, 1, 2)
+#experiment = simulationBSCandParityBit(1200, 12, 2)
+#experiment = simulationBurstErrorandParityBit(1200, 5, 4, 2)
+#experiment = simulationBSCandCRCGolay(1200, 2)
+#experiment = simulationBurstErrorandCRCGolay(1200, 3, 2)
+experiment = simulationBSCandBCH(1600, 2)
+#experiment = simulationBurstErrorandBCH(1600, 3, 2)
 print(experiment[0])
 print("\n")
 print(experiment[1])
 print("\n")
 print(experiment[2])
-#print(compareData(experiment[0], experiment[1]))
-
-#packetPrim = burstErrorChannel(packet4, 0.2, 3)
-#print(packetPrim)
-
-#coder = generateCRC8()
-#coded = coder.encode(packet3)
 
