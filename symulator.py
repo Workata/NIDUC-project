@@ -1,6 +1,7 @@
 import numpy as np
 import komm as komm
 import time
+import xlsxwriter as excelWriter
 
 #-----------------------------METODY--DO--SYMULACJI-----------------------------------------------------------------
 
@@ -100,19 +101,21 @@ def compareData(data1, data2):               # zakladam, ze wymiary sa takie sam
         i += 1
     return bitErrorCounter
 
-def simulationBSCandParityBit(messageLength, packetLength, retransmissionMax):
+def simulationBSCandParityBit(messageLength, packetLength, retransmissionMax, channelErrorProbability):
     data = generateMessage(messageLength, packetLength)
     numberOfPackets = int(np.ceil(messageLength / packetLength))
     dataReceived = np.arange(packetLength*numberOfPackets).reshape(numberOfPackets, packetLength)    #
     i = 0
+    numberOfRetransmissions = 0
     start = time.time()
     for packet in data:
         retransmissionCounter = 0
         while retransmissionCounter < retransmissionMax:
             packetPB = addParityBit(packet)
-            packetReceived = binarySymmetricChannel(packetPB, 0.1)
+            packetReceived = binarySymmetricChannel(packetPB, channelErrorProbability)
             if(checkParityBit(packetReceived)==0):
                 retransmissionCounter+=1
+                numberOfRetransmissions+=1
             else:
                 break
         packetReceived = np.delete(packetReceived, len(packetReceived)-1)    # obciecie bitu parzystosci
@@ -120,9 +123,10 @@ def simulationBSCandParityBit(messageLength, packetLength, retransmissionMax):
         i += 1
     end = time.time()
     bitErrorRate = (compareData(data,dataReceived)/messageLength)*100   # bit error rate (wyrazony w procentach)
-    redundancy = (1-(packetLength/(packetLength+1)))*100                # nadmiar kodowy (wyrazony w procentach)
+    codeRedundancy = (1-(packetLength/(packetLength+1)))*100                # nadmiar kodowy (wyrazony w procentach)
+    redundancy = (numberOfRetransmissions*(packetLength+1)+numberOfPackets*1)/ (numberOfRetransmissions+ numberOfPackets)*(packetLength+1)
     timeCounter = (end-start)                                           # czas symulacji (w sekundach)
-    return [bitErrorRate, redundancy, timeCounter]
+    return [bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
 
 def simulationBurstErrorandParityBit(messageLength, packetLength, lenOfSubsequence, retransmissionMax):
     data = generateMessage(messageLength, packetLength)
@@ -261,15 +265,47 @@ def simulationBurstErrorandBCH(messageLength, lenOfSubsequence, retransmissionMa
     return [bitErrorRate, redundancy, timeCounter]
 
 
+def writeInExcel(rowIndex, columnIndex, data, workbook, worksheet):
+    for value in data:
+        worksheet.write(rowIndex, columnIndex, value)
+        columnIndex += 1
+    return
+
+
+def experimentBSCandParityBit():
+    rowIndex = 0
+    messageLength = 1200 # zakladam, ze jest stale
+    retransmissionMax = 2 # zakladam, ze jest stale
+    maxNumInSeries = 20
+    numInSeries = 0
+    workbook = excelWriter.Workbook('Pomiary.xlsx')
+    worksheet = workbook.add_worksheet("BSCandParityBit")      # add_worksheet()
+    data = ["Bit error rate [%]", "Code redundancy [%]","Redundancy (with retransmissions)[%]", "Time of simulation [s]","Channel error probability "]
+    writeInExcel(rowIndex, 0, data, workbook, worksheet)
+    rowIndex +=1
+    channelErrorProbability = 0.1
+    packetLength = 12
+    while numInSeries < maxNumInSeries:
+        experiment = simulationBSCandParityBit(messageLength, packetLength, retransmissionMax , channelErrorProbability)
+        writeInExcel(rowIndex, 0, experiment, workbook, worksheet)
+        rowIndex +=1
+        numInSeries +=1
+    numInSeries = 0
+    workbook.close()
+    return
 #--------------------------------------------TESTY----------------------------------------------------------------
 
-#experiment = simulationBSCandParityBit(1200, 12, 2)
+
+# simulationBSCandParityBit(messageLength, packetLength, retransmissionMax, channelErrorProbability):
+#experiment = simulationBSCandParityBit(1200, 12, 2, 0.1) # return [bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
+experimentBSCandParityBit()
 #experiment = simulationBurstErrorandParityBit(1200, 5, 4, 2)
 #experiment = simulationBSCandCRCGolay(1200, 2)
 #experiment = simulationBurstErrorandCRCGolay(1200, 3, 2)
-experiment = simulationBSCandBCH(1600, 2)
+#experiment = simulationBSCandBCH(1600, 2)
 #experiment = simulationBurstErrorandBCH(1600, 3, 2)
-print("Bit error rate: ", experiment[0], "%")
-print("Redundancy: ",experiment[1], "%")
-print("Time of simulation: ",experiment[2],"s")
+
+# print("Bit error rate: ", experiment[0], "%")
+# print("Redundancy: ",experiment[1], "%")
+# print("Time of simulation: ",experiment[2],"s")
 
