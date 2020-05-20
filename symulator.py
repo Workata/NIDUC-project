@@ -268,8 +268,8 @@ def simulationBurstErrorandBCH(messageLength, lenOfSubsequence, retransmissionMa
             packetBCHDecoded = coder.decode(packetReceived)
             comparision = packet == packetBCHDecoded
             if(comparision.all() == False):  # w bibliotece komm nie znalazlem metody, ktora pozwala sprawdzac poprawnosc odebranego pakietu, wiec go porownuje z poczatkowym
-                retransmissionCounter+=1
-                numberOfRetransmissions +=1
+                retransmissionCounter += 1
+                numberOfRetransmissions += 1
             else:
                 break
         dataReceived[i] = packetBCHDecoded
@@ -302,12 +302,27 @@ def experimentBSCandParityBit(workbook):
     rowIndex +=1
     channelErrorProbability = 0.1
     packetLength = 12
-    while numInSeries < maxNumInSeries:
+    while numInSeries < maxNumInSeries: # pierwsza seria pomiarów dla channelErrorProbability = 0.1 i packetLength = 12 n = 12+1 (parity bit)
         experiment = simulationBSCandParityBit(messageLength, packetLength, retransmissionMax, channelErrorProbability)
         writeInExcel(rowIndex, 0, experiment,  worksheet)
-        rowIndex +=1
-        numInSeries +=1
-    numInSeries = 0
+        rowIndex += 1
+        numInSeries += 1
+    numInSeries = 0 # wyzerowanie licznika serii
+    channelErrorProbability = 0.15
+    packetLength = 5
+    while numInSeries < maxNumInSeries: # druga seria pomiarów dla channelErrorProbability = 0.15 i packetLength = 5 n = 5+1 (parity bit)
+        experiment = simulationBSCandParityBit(messageLength, packetLength, retransmissionMax, channelErrorProbability)
+        writeInExcel(rowIndex, 0, experiment,  worksheet)
+        rowIndex += 1
+        numInSeries += 1
+    numInSeries = 0     # wyzerowanie licznika serii
+    channelErrorProbability = 0.05
+    packetLength = 15
+    while numInSeries < maxNumInSeries: # trzecia seria pomiarów dla channelErrorProbability = 0.05 i packetLength = 5 n = 15+1 (parity bit)
+        experiment = simulationBSCandParityBit(messageLength, packetLength, retransmissionMax, channelErrorProbability)
+        writeInExcel(rowIndex, 0, experiment,  worksheet)
+        rowIndex += 1
+        numInSeries += 1
 
     return
 
@@ -329,7 +344,22 @@ def experimentBurstErrorandParityBit(workbook):
         writeInExcel(rowIndex, 0, experiment, worksheet)
         rowIndex +=1
         numInSeries +=1
-    numInSeries = 0
+    numInSeries = 0  # wyzerowanie licznika serii
+    channelErrorProbability = 0.15
+    packetLength = 5
+    while numInSeries < maxNumInSeries:
+        experiment = simulationBurstErrorandParityBit(messageLength, packetLength, lenOfSubsequence, retransmissionMax, channelErrorProbability)
+        writeInExcel(rowIndex, 0, experiment, worksheet)
+        rowIndex +=1
+        numInSeries +=1
+    numInSeries = 0  # wyzerowanie licznika serii
+    channelErrorProbability = 0.05
+    packetLength = 15
+    while numInSeries < maxNumInSeries:
+        experiment = simulationBurstErrorandParityBit(messageLength, packetLength, lenOfSubsequence, retransmissionMax, channelErrorProbability)
+        writeInExcel(rowIndex, 0, experiment, worksheet)
+        rowIndex +=1
+        numInSeries +=1
     return
 
 def experimentBSCandCRCGolay(workbook):
@@ -349,12 +379,25 @@ def experimentBSCandCRCGolay(workbook):
         rowIndex +=1
         numInSeries +=1
     numInSeries = 0
+    channelErrorProbability = 0.15
+    while numInSeries < maxNumInSeries:
+        experiment = simulationBSCandCRCGolay(messageLength, retransmissionMax, channelErrorProbability) # packetLength = 12 staly
+        writeInExcel(rowIndex, 0, experiment, worksheet)
+        rowIndex +=1
+        numInSeries +=1
+    numInSeries = 0
+    channelErrorProbability = 0.05
+    while numInSeries < maxNumInSeries:
+        experiment = simulationBSCandCRCGolay(messageLength, retransmissionMax, channelErrorProbability) # packetLength = 12 staly
+        writeInExcel(rowIndex, 0, experiment, worksheet)
+        rowIndex +=1
+        numInSeries +=1
     return
 
 def experimentBurstErrorandCRCGolay(workbook):
     rowIndex = 0
     messageLength = 1200 # zakladam, ze jest stale
-    lenOfSubsequence = 4
+    lenOfSubsequence = 3
     retransmissionMax = 2 # zakladam, ze jest stale
     maxNumInSeries = 20
     numInSeries = 0
@@ -366,9 +409,22 @@ def experimentBurstErrorandCRCGolay(workbook):
     while numInSeries < maxNumInSeries:
         experiment = simulationBurstErrorandCRCGolay(messageLength, lenOfSubsequence, retransmissionMax, channelErrorProbability) #  packetLength = 12
         writeInExcel(rowIndex, 0, experiment, worksheet)
-        rowIndex +=1
-        numInSeries +=1
+        rowIndex += 1
+        numInSeries += 1
     numInSeries = 0
+    channelErrorProbability = 0.15
+    while numInSeries < maxNumInSeries:
+        experiment = simulationBurstErrorandCRCGolay(messageLength, lenOfSubsequence, retransmissionMax, channelErrorProbability) #  packetLength = 12
+        writeInExcel(rowIndex, 0, experiment, worksheet)
+        rowIndex += 1
+        numInSeries += 1
+    numInSeries = 0
+    channelErrorProbability = 0.05
+    while numInSeries < maxNumInSeries:
+        experiment = simulationBurstErrorandCRCGolay(messageLength, lenOfSubsequence, retransmissionMax, channelErrorProbability) #  packetLength = 12
+        writeInExcel(rowIndex, 0, experiment, worksheet)
+        rowIndex += 1
+        numInSeries += 1
     return
 
 def experimentBSCandBCH(workbook):
@@ -385,20 +441,33 @@ def experimentBSCandBCH(workbook):
     while numInSeries < maxNumInSeries:
         experiment = simulationBSCandBCH(messageLength, retransmissionMax, channelErrorProbability) # packetLength = 16 staly
         writeInExcel(rowIndex, 0, experiment, worksheet)
-        rowIndex +=1
-        numInSeries +=1
+        rowIndex += 1
+        numInSeries += 1
     numInSeries = 0
+    channelErrorProbability = 0.05
+    while numInSeries < maxNumInSeries:
+        experiment = simulationBSCandBCH(messageLength, retransmissionMax, channelErrorProbability) # packetLength = 16 staly
+        writeInExcel(rowIndex, 0, experiment, worksheet)
+        rowIndex += 1
+        numInSeries += 1
+    numInSeries = 0
+    channelErrorProbability = 0.15
+    while numInSeries < maxNumInSeries:
+        experiment = simulationBSCandBCH(messageLength, retransmissionMax, channelErrorProbability) # packetLength = 16 staly
+        writeInExcel(rowIndex, 0, experiment, worksheet)
+        rowIndex += 1
+        numInSeries += 1
     return
 
 def experimentBurstErrorandBCH(workbook):
     rowIndex = 0
     messageLength = 1200 # zakladam, ze jest stale
-    lenOfSubsequence = 4
+    lenOfSubsequence = 3
     retransmissionMax = 2 # zakladam, ze jest stale
     maxNumInSeries = 20
     numInSeries = 0
     worksheet = workbook.add_worksheet("BurstError and BCH")
-    data = ["Bit error rate [%]", "Code redundancy [%]","Redundancy (with retransmissions)[%]", "Time of simulation [s]","Channel error probability "]
+    data = ["Bit error rate [%]", "Code redundancy [%]", "Redundancy (with retransmissions)[%]", "Time of simulation [s]", "Channel error probability "]
     writeInExcel(rowIndex, 0, data,  worksheet)
     rowIndex +=1
     channelErrorProbability = 0.1
@@ -408,6 +477,19 @@ def experimentBurstErrorandBCH(workbook):
         rowIndex +=1
         numInSeries +=1
     numInSeries = 0
+    channelErrorProbability = 0.05
+    while numInSeries < maxNumInSeries:
+        experiment = simulationBurstErrorandBCH(messageLength, lenOfSubsequence, retransmissionMax, channelErrorProbability) #  packetLength = 16
+        writeInExcel(rowIndex, 0, experiment, worksheet)
+        rowIndex +=1
+        numInSeries +=1
+    numInSeries = 0
+    channelErrorProbability = 0.15
+    while numInSeries < maxNumInSeries:
+        experiment = simulationBurstErrorandBCH(messageLength, lenOfSubsequence, retransmissionMax, channelErrorProbability) #  packetLength = 16
+        writeInExcel(rowIndex, 0, experiment, worksheet)
+        rowIndex +=1
+        numInSeries +=1
     return
 #--------------------------------------------TESTY----------------------------------------------------------------
 
