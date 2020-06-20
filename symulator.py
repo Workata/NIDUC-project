@@ -128,7 +128,7 @@ def simulationBSCandParityBit(messageLength, packetLength, retransmissionMax, ch
     allBits = (numberOfPackets+numberOfRetransmissions)*(packetLength+1)
     aValue = allBits/messageLength
     timeCounter = (end-start)                                           # czas symulacji (w sekundach)
-    return [bitErrorRate, aValue, timeCounter, channelErrorProbability] #[bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
+    return [bitErrorRate, aValue, timeCounter, channelErrorProbability*100] #[bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
 
 def simulationBurstErrorandParityBit(messageLength, packetLength, lenOfSubsequence, retransmissionMax, channelErrorProbability):
     data = generateMessage(messageLength, packetLength)
@@ -157,7 +157,7 @@ def simulationBurstErrorandParityBit(messageLength, packetLength, lenOfSubsequen
     allBits = (numberOfPackets+numberOfRetransmissions)*(packetLength+1)
     aValue = allBits/messageLength
     timeCounter = (end-start)                                           # czas symulacji (w sekundach)
-    return [bitErrorRate, aValue, timeCounter, channelErrorProbability]  #[bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
+    return [bitErrorRate, aValue, timeCounter, channelErrorProbability*100]  #[bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
 
 
 # packetLength = 12, stala dlugosc pakietu
@@ -191,7 +191,7 @@ def simulationBSCandCRCGolay(messageLength, retransmissionMax, channelErrorProba
     allBits = (numberOfPackets+numberOfRetransmissions)*(packetLength+11)
     aValue = allBits/messageLength
     timeCounter = (end-start)                                           # czas symulacji (w sekundach)
-    return [bitErrorRate, aValue, timeCounter, channelErrorProbability]  #[bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
+    return [bitErrorRate, aValue, timeCounter, channelErrorProbability*100]  #[bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
 
 def simulationBurstErrorandCRCGolay(messageLength, lenOfSubsequence, retransmissionMax, channelErrorProbability):     # packetLength = 12
     packetLength = 12
@@ -206,7 +206,7 @@ def simulationBurstErrorandCRCGolay(messageLength, lenOfSubsequence, retransmiss
         retransmissionCounter = 0
         while retransmissionCounter < retransmissionMax:
             packetCRCGolayEncoded = coder.encode(packet)
-            packetReceived = burstErrorChannel(packetCRCGolayEncoded, 0.1, lenOfSubsequence)
+            packetReceived = burstErrorChannel(packetCRCGolayEncoded, channelErrorProbability, lenOfSubsequence)
             packetCRCGolayDecoded = coder.decode(packetReceived)
             comparision = packet == packetCRCGolayDecoded
             if(comparision.all() == False):  # w bibliotece komm nie znalazlem metody, ktora pozwala sprawdzac poprawnosc odebranego pakietu (CRC), wiec go porownuje z poczatkowym
@@ -223,7 +223,7 @@ def simulationBurstErrorandCRCGolay(messageLength, lenOfSubsequence, retransmiss
     allBits = (numberOfPackets+numberOfRetransmissions)*(packetLength+11)
     aValue = allBits/messageLength
     timeCounter = (end-start)                                           # czas symulacji (w sekundach)
-    return [bitErrorRate, aValue, timeCounter, channelErrorProbability]  #[bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
+    return [bitErrorRate, aValue, timeCounter, channelErrorProbability*100]  #[bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
 
 def simulationBSCandBCH(messageLength, retransmissionMax, channelErrorProbability):   # n = 2^(mi) - 1, 1<= tau <2^(mi-1), ; dlugosc pakietu (dimension) -> k>= n - mi*tau
     packetLength = 16   # >= n- mi*tau
@@ -257,7 +257,7 @@ def simulationBSCandBCH(messageLength, retransmissionMax, channelErrorProbabilit
     allBits = (numberOfPackets+numberOfRetransmissions)*(packetLength+15)
     aValue = allBits/messageLength
     timeCounter = (end-start)                                           # czas symulacji (w sekundach)
-    return [bitErrorRate, aValue, timeCounter, channelErrorProbability]  #[bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
+    return [bitErrorRate, aValue, timeCounter, channelErrorProbability*100]  #[bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
 
 def simulationBurstErrorandBCH(messageLength, lenOfSubsequence, retransmissionMax, channelErrorProbability):   # n = 2^(mi) - 1, 1<= tau <2^(mi-1), ; dlugosc pakietu (dimension) -> k>= n - mi*tau
     packetLength = 16   # >= n- mi*tau
@@ -291,7 +291,7 @@ def simulationBurstErrorandBCH(messageLength, lenOfSubsequence, retransmissionMa
     allBits = (numberOfPackets+numberOfRetransmissions)*(packetLength+15)
     aValue = allBits/messageLength
     timeCounter = (end-start)                                           # czas symulacji (w sekundach)
-    return [bitErrorRate, aValue, timeCounter, channelErrorProbability]  # [bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
+    return [bitErrorRate, aValue, timeCounter, channelErrorProbability*100]  # [bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
 
 # ------------------------------------------- EKSPERYMENTY --------------------------------------------
 
@@ -302,17 +302,17 @@ def writeInExcel(rowIndex, columnIndex, data, worksheet):
     return
 
 
-def experimentBSCandParityBit(workbook):
+def experimentBSCandParityBit(workbook, CEP1, CEP2, CEP3):
     rowIndex = 0
     messageLength = 1200 # zakladam, ze jest stale
     retransmissionMax = 2 # zakladam, ze jest stale
     maxNumInSeries = 20
     numInSeries = 0
     worksheet = workbook.add_worksheet("BSC and ParityBit")
-    data = ["Bit error rate [%]", "'a' Value [M = a*N]", "Time of simulation [s]","Channel error probability "] # ["Bit error rate [%]", "Code redundancy [%]","Redundancy (with retransmissions)[%]", "Time of simulation [s]","Channel error probability "]
+    data = ["Bit error rate [%]", "'a' Value [M = a*N]", "Time of simulation [s]","Channel error probability [%]"] # ["Bit error rate [%]", "Code redundancy [%]","Redundancy (with retransmissions)[%]", "Time of simulation [s]","Channel error probability "]
     writeInExcel(rowIndex, 0, data,  worksheet)
     rowIndex +=1
-    channelErrorProbability = 0.1
+    channelErrorProbability = CEP1
     packetLength = 12
     while numInSeries < maxNumInSeries: # pierwsza seria pomiarów dla channelErrorProbability = 0.1 i packetLength = 12 n = 12+1 (parity bit)
         experiment = simulationBSCandParityBit(messageLength, packetLength, retransmissionMax, channelErrorProbability)
@@ -320,7 +320,7 @@ def experimentBSCandParityBit(workbook):
         rowIndex += 1
         numInSeries += 1
     numInSeries = 0 # wyzerowanie licznika serii
-    channelErrorProbability = 0.15
+    channelErrorProbability = CEP2
     packetLength = 5
     while numInSeries < maxNumInSeries: # druga seria pomiarów dla channelErrorProbability = 0.15 i packetLength = 5 n = 5+1 (parity bit)
         experiment = simulationBSCandParityBit(messageLength, packetLength, retransmissionMax, channelErrorProbability)
@@ -328,7 +328,7 @@ def experimentBSCandParityBit(workbook):
         rowIndex += 1
         numInSeries += 1
     numInSeries = 0     # wyzerowanie licznika serii
-    channelErrorProbability = 0.05
+    channelErrorProbability = CEP3
     packetLength = 15
     while numInSeries < maxNumInSeries: # trzecia seria pomiarów dla channelErrorProbability = 0.05 i packetLength = 5 n = 15+1 (parity bit)
         experiment = simulationBSCandParityBit(messageLength, packetLength, retransmissionMax, channelErrorProbability)
@@ -338,7 +338,7 @@ def experimentBSCandParityBit(workbook):
 
     return
 
-def experimentBurstErrorandParityBit(workbook):
+def experimentBurstErrorandParityBit(workbook, CEP1, CEP2, CEP3):
     rowIndex = 0
     messageLength = 1200 # zakladam, ze jest stale
     lenOfSubsequence = 4
@@ -346,10 +346,10 @@ def experimentBurstErrorandParityBit(workbook):
     maxNumInSeries = 20
     numInSeries = 0
     worksheet = workbook.add_worksheet("BurstError and ParityBit")
-    data = ["Bit error rate [%]", "'a' Value [M = a*N]", "Time of simulation [s]","Channel error probability "] #["Bit error rate [%]", "Code redundancy [%]","Redundancy (with retransmissions)[%]", "Time of simulation [s]","Channel error probability "]
+    data = ["Bit error rate [%]", "'a' Value [M = a*N]", "Time of simulation [s]","Channel error probability [%]"] #["Bit error rate [%]", "Code redundancy [%]","Redundancy (with retransmissions)[%]", "Time of simulation [s]","Channel error probability "]
     writeInExcel(rowIndex, 0, data,  worksheet)
     rowIndex +=1
-    channelErrorProbability = 0.1
+    channelErrorProbability = CEP1
     packetLength = 12
     while numInSeries < maxNumInSeries:
         experiment = simulationBurstErrorandParityBit(messageLength, packetLength, lenOfSubsequence, retransmissionMax, channelErrorProbability)
@@ -357,7 +357,7 @@ def experimentBurstErrorandParityBit(workbook):
         rowIndex +=1
         numInSeries +=1
     numInSeries = 0  # wyzerowanie licznika serii
-    channelErrorProbability = 0.15
+    channelErrorProbability = CEP2
     packetLength = 5
     while numInSeries < maxNumInSeries:
         experiment = simulationBurstErrorandParityBit(messageLength, packetLength, lenOfSubsequence, retransmissionMax, channelErrorProbability)
@@ -365,7 +365,7 @@ def experimentBurstErrorandParityBit(workbook):
         rowIndex +=1
         numInSeries +=1
     numInSeries = 0  # wyzerowanie licznika serii
-    channelErrorProbability = 0.05
+    channelErrorProbability = CEP3
     packetLength = 15
     while numInSeries < maxNumInSeries:
         experiment = simulationBurstErrorandParityBit(messageLength, packetLength, lenOfSubsequence, retransmissionMax, channelErrorProbability)
@@ -374,31 +374,31 @@ def experimentBurstErrorandParityBit(workbook):
         numInSeries +=1
     return
 
-def experimentBSCandCRCGolay(workbook):
+def experimentBSCandCRCGolay(workbook, CEP1, CEP2, CEP3):
     rowIndex = 0
     messageLength = 1200 # zakladam, ze jest stale
     retransmissionMax = 2 # zakladam, ze jest stale
     maxNumInSeries = 20
     numInSeries = 0
     worksheet = workbook.add_worksheet("BSC and CRC Golay")
-    data = ["Bit error rate [%]", "'a' Value [M = a*N]", "Time of simulation [s]","Channel error probability "] #["Bit error rate [%]", "Code redundancy [%]","Redundancy (with retransmissions)[%]", "Time of simulation [s]","Channel error probability "]
+    data = ["Bit error rate [%]", "'a' Value [M = a*N]", "Time of simulation [s]","Channel error probability [%]"] #["Bit error rate [%]", "Code redundancy [%]","Redundancy (with retransmissions)[%]", "Time of simulation [s]","Channel error probability "]
     writeInExcel(rowIndex, 0, data,  worksheet)
     rowIndex +=1
-    channelErrorProbability = 0.1
+    channelErrorProbability = CEP1
     while numInSeries < maxNumInSeries:
         experiment = simulationBSCandCRCGolay(messageLength, retransmissionMax, channelErrorProbability) # packetLength = 12 staly
         writeInExcel(rowIndex, 0, experiment, worksheet)
         rowIndex +=1
         numInSeries +=1
     numInSeries = 0
-    channelErrorProbability = 0.15
+    channelErrorProbability = CEP2
     while numInSeries < maxNumInSeries:
         experiment = simulationBSCandCRCGolay(messageLength, retransmissionMax, channelErrorProbability) # packetLength = 12 staly
         writeInExcel(rowIndex, 0, experiment, worksheet)
         rowIndex +=1
         numInSeries +=1
     numInSeries = 0
-    channelErrorProbability = 0.05
+    channelErrorProbability = CEP3
     while numInSeries < maxNumInSeries:
         experiment = simulationBSCandCRCGolay(messageLength, retransmissionMax, channelErrorProbability) # packetLength = 12 staly
         writeInExcel(rowIndex, 0, experiment, worksheet)
@@ -406,7 +406,7 @@ def experimentBSCandCRCGolay(workbook):
         numInSeries +=1
     return
 
-def experimentBurstErrorandCRCGolay(workbook):
+def experimentBurstErrorandCRCGolay(workbook, CEP1, CEP2, CEP3):
     rowIndex = 0
     messageLength = 1200 # zakladam, ze jest stale
     lenOfSubsequence = 3
@@ -414,24 +414,24 @@ def experimentBurstErrorandCRCGolay(workbook):
     maxNumInSeries = 20
     numInSeries = 0
     worksheet = workbook.add_worksheet("BurstError and CRC Golay")
-    data = ["Bit error rate [%]", "'a' Value [M = a*N]", "Time of simulation [s]","Channel error probability "] #["Bit error rate [%]", "Code redundancy [%]","Redundancy (with retransmissions)[%]", "Time of simulation [s]","Channel error probability "]
+    data = ["Bit error rate [%]", "'a' Value [M = a*N]", "Time of simulation [s]","Channel error probability [%]"] #["Bit error rate [%]", "Code redundancy [%]","Redundancy (with retransmissions)[%]", "Time of simulation [s]","Channel error probability "]
     writeInExcel(rowIndex, 0, data,  worksheet)
     rowIndex +=1
-    channelErrorProbability = 0.1
+    channelErrorProbability = CEP1
     while numInSeries < maxNumInSeries:
         experiment = simulationBurstErrorandCRCGolay(messageLength, lenOfSubsequence, retransmissionMax, channelErrorProbability) #  packetLength = 12
         writeInExcel(rowIndex, 0, experiment, worksheet)
         rowIndex += 1
         numInSeries += 1
     numInSeries = 0
-    channelErrorProbability = 0.15
+    channelErrorProbability = CEP2
     while numInSeries < maxNumInSeries:
         experiment = simulationBurstErrorandCRCGolay(messageLength, lenOfSubsequence, retransmissionMax, channelErrorProbability) #  packetLength = 12
         writeInExcel(rowIndex, 0, experiment, worksheet)
         rowIndex += 1
         numInSeries += 1
     numInSeries = 0
-    channelErrorProbability = 0.05
+    channelErrorProbability = CEP3
     while numInSeries < maxNumInSeries:
         experiment = simulationBurstErrorandCRCGolay(messageLength, lenOfSubsequence, retransmissionMax, channelErrorProbability) #  packetLength = 12
         writeInExcel(rowIndex, 0, experiment, worksheet)
@@ -439,31 +439,31 @@ def experimentBurstErrorandCRCGolay(workbook):
         numInSeries += 1
     return
 
-def experimentBSCandBCH(workbook):
+def experimentBSCandBCH(workbook, CEP1, CEP2, CEP3):
     rowIndex = 0
     messageLength = 1200 # zakladam, ze jest stale
     retransmissionMax = 2 # zakladam, ze jest stale
     maxNumInSeries = 20
     numInSeries = 0
     worksheet = workbook.add_worksheet("BSC and BCH")
-    data = ["Bit error rate [%]", "'a' Value [M = a*N]", "Time of simulation [s]","Channel error probability "] #["Bit error rate [%]", "Code redundancy [%]","Redundancy (with retransmissions)[%]", "Time of simulation [s]","Channel error probability "]
+    data = ["Bit error rate [%]", "'a' Value [M = a*N]", "Time of simulation [s]","Channel error probability [%]"] #["Bit error rate [%]", "Code redundancy [%]","Redundancy (with retransmissions)[%]", "Time of simulation [s]","Channel error probability "]
     writeInExcel(rowIndex, 0, data,  worksheet)
     rowIndex +=1
-    channelErrorProbability = 0.1
+    channelErrorProbability = CEP1
     while numInSeries < maxNumInSeries:
         experiment = simulationBSCandBCH(messageLength, retransmissionMax, channelErrorProbability) # packetLength = 16 staly
         writeInExcel(rowIndex, 0, experiment, worksheet)
         rowIndex += 1
         numInSeries += 1
     numInSeries = 0
-    channelErrorProbability = 0.05
+    channelErrorProbability = CEP2
     while numInSeries < maxNumInSeries:
         experiment = simulationBSCandBCH(messageLength, retransmissionMax, channelErrorProbability) # packetLength = 16 staly
         writeInExcel(rowIndex, 0, experiment, worksheet)
         rowIndex += 1
         numInSeries += 1
     numInSeries = 0
-    channelErrorProbability = 0.15
+    channelErrorProbability = CEP3
     while numInSeries < maxNumInSeries:
         experiment = simulationBSCandBCH(messageLength, retransmissionMax, channelErrorProbability) # packetLength = 16 staly
         writeInExcel(rowIndex, 0, experiment, worksheet)
@@ -471,7 +471,7 @@ def experimentBSCandBCH(workbook):
         numInSeries += 1
     return
 
-def experimentBurstErrorandBCH(workbook):
+def experimentBurstErrorandBCH(workbook, CEP1, CEP2, CEP3):
     rowIndex = 0
     messageLength = 1200 # zakladam, ze jest stale
     lenOfSubsequence = 3
@@ -479,24 +479,24 @@ def experimentBurstErrorandBCH(workbook):
     maxNumInSeries = 20
     numInSeries = 0
     worksheet = workbook.add_worksheet("BurstError and BCH")
-    data = ["Bit error rate [%]", "'a' Value [M = a*N]", "Time of simulation [s]", "Channel error probability "]  # ["Bit error rate [%]", "Code redundancy [%]","Redundancy (with retransmissions)[%]", "Time of simulation [s]","Channel error probability "]
+    data = ["Bit error rate [%]", "'a' Value [M = a*N]", "Time of simulation [s]", "Channel error probability [%]"]  # ["Bit error rate [%]", "Code redundancy [%]","Redundancy (with retransmissions)[%]", "Time of simulation [s]","Channel error probability "]
     writeInExcel(rowIndex, 0, data,  worksheet)
     rowIndex +=1
-    channelErrorProbability = 0.1
+    channelErrorProbability = CEP1
     while numInSeries < maxNumInSeries:
         experiment = simulationBurstErrorandBCH(messageLength, lenOfSubsequence, retransmissionMax, channelErrorProbability) #  packetLength = 16
         writeInExcel(rowIndex, 0, experiment, worksheet)
         rowIndex +=1
         numInSeries +=1
     numInSeries = 0
-    channelErrorProbability = 0.05
+    channelErrorProbability = CEP2
     while numInSeries < maxNumInSeries:
         experiment = simulationBurstErrorandBCH(messageLength, lenOfSubsequence, retransmissionMax, channelErrorProbability) #  packetLength = 16
         writeInExcel(rowIndex, 0, experiment, worksheet)
         rowIndex +=1
         numInSeries +=1
     numInSeries = 0
-    channelErrorProbability = 0.15
+    channelErrorProbability = CEP3
     while numInSeries < maxNumInSeries:
         experiment = simulationBurstErrorandBCH(messageLength, lenOfSubsequence, retransmissionMax, channelErrorProbability) #  packetLength = 16
         writeInExcel(rowIndex, 0, experiment, worksheet)
@@ -507,32 +507,17 @@ def experimentBurstErrorandBCH(workbook):
 
 workbook = excelWriter.Workbook('Pomiary.xlsx')
 
-# simulationBSCandParityBit(messageLength, packetLength, retransmissionMax, channelErrorProbability):
-#experiment = simulationBSCandParityBit(1200, 12, 2, 0.1) # return [bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
-experimentBSCandParityBit(workbook)
+# Zdefiniowanie trzech roznych prawdopodobienstw przeklamania bitu
 
-# simulationBurstErrorandParityBit(messageLength, packetLength, lenOfSubsequence, retransmissionMax, channelErrorProbability):
-#experiment = simulationBurstErrorandParityBit(1200, 5, 4, 2) # return [bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
-experimentBurstErrorandParityBit(workbook)
+CEP1 = 0.01
+CEP2 = 0.025
+CEP3 = 0.05
 
-# simulationBSCandCRCGolay(messageLength, retransmissionMax, channelErrorProbability):
-#experiment = simulationBSCandCRCGolay(1200, 2) # return [bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
-experimentBSCandCRCGolay(workbook)
-
-# simulationBurstErrorandCRCGolay(messageLength, lenOfSubsequence, retransmissionMax, channelErrorProbability)
-#experiment = simulationBurstErrorandCRCGolay(1200, 3, 2) # return [bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
-experimentBurstErrorandCRCGolay(workbook)
-
-# simulationBSCandBCH(messageLength, retransmissionMax, channelErrorProbability)
-#experiment = simulationBSCandBCH(1600, 2) # return [bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
-experimentBSCandBCH(workbook)
-
-# simulationBurstErrorandBCH(messageLength, lenOfSubsequence, retransmissionMax, channelErrorProbability)
-#experiment = simulationBurstErrorandBCH(1600, 3, 2) # return [bitErrorRate, codeRedundancy, redundancy, timeCounter, channelErrorProbability]
-experimentBurstErrorandBCH(workbook)
+experimentBSCandParityBit(workbook, CEP1, CEP2, CEP3)
+experimentBurstErrorandParityBit(workbook, CEP1, CEP2, CEP3)
+experimentBSCandCRCGolay(workbook, CEP1, CEP2, CEP3)
+experimentBurstErrorandCRCGolay(workbook, CEP1, CEP2, CEP3)
+experimentBSCandBCH(workbook, CEP1, CEP2, CEP3)
+experimentBurstErrorandBCH(workbook, CEP1, CEP2, CEP3)
 
 workbook.close()
-
-# print("Bit error rate: ", experiment[0], "%")
-# print("Redundancy: ",experiment[1], "%")
-# print("Time of simulation: ",experiment[2],"s")
